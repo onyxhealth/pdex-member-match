@@ -5,7 +5,8 @@ from icecream import ic
 from .settings import DEFAULT_PORT
 from .settings import DEFAULT_DESCRIPTION, DEFAULT_SEVERITY, DEFAULT_CODE, DEFAULT_STATUS_CODE, REQUIRED_PARAMETERS
 from .classes import OperationOutcomeException
-from .datavalidation import unique_match_on_coverage, load_parameters, evaluate_consent, get_metadata
+from .datavalidation import unique_match_on_coverage, load_parameters, evaluate_consent, get_metadata, call_fhir, write_fhir
+import logging
 
 import json
 import uuid
@@ -161,17 +162,56 @@ def member_match():
     member, coverage, consent = load_parameters(data)
     m_data = unique_match_on_coverage(coverage, member)
     ic(m_data)
-    ic(m_data[0])
+    # ic(m_data[0])
     ic(m_data[1])
+    ic('entry' in m_data[1])
     m_data1 = m_data[1]
     member_id = ""
     if 'entry' in m_data1:
-        if len(m_data1['entry']) == 1:
+        ic(m_data1['entry'])
+        ic(len(m_data1['entry']))
+        if len(m_data1['entry']) > 0:
+            ic("second if statement ran")
             member_id = m_data1['entry'][0]['resource']['beneficiary']['reference']
             ic(member_id)
             # We have a unique member. Now check Consent
             comply = evaluate_consent(consent, member_id)
-            return jsonify({'member_id': member_id})
+            if comply:
+                return jsonify({'member_id': member_id})
+            else:
+                error = {'status_code': 422,
+                     'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
+                     'description': "Unable to comply with consent"}
+
+                raise OperationOutcomeException(status_code=error['status_code'],
+                                                description=error['description'])
+
+    error = {'status_code': 422,
+            'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
+            'description': "Unable to match Patient"}
+
+    raise OperationOutcomeException(status_code=error['status_code'],
+                                            description=error['description'])
+
+    return()
+
+@app.route('/resource/<string:resourceType>', methods=['GET', 'POST'])
+def get_resource(resourceType):
+    '''
+    process getting resource data info
+    :return:
+    '''
+    logging.info("resource/<resourceType> hit")
+    if request.method == 'POST':
+        data = request.get_json()
+        status_code, response = write_fhir("POST", data)
+        print(status_code, response)
+        return jsonify(response)
+    else:
+        status_code, response = call_fhir("GET", resourceType)
+        print(status_code, response)
+        return jsonify(response)
+
 
 
 if __name__ == '__main__':
