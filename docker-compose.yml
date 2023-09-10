@@ -16,7 +16,6 @@ services:
       - FLASK_APP=membermatch/__init__.py
       - FLASK_RUN_PORT=8000
       - FLASK_DEBUG=1
-      - FHIR_STORE_SERVER=fhirstore
       - FHIR_STORE_PORT=8080
     networks:
       - mm-overlay

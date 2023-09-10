@@ -1,6 +1,6 @@
 from datetime import date
 from icecream import ic
-from .settings import FHIR_BASE_URL, CLIENT_ID, CLIENT_SECRET, TENANT, AUTH_URL, SECURE_URL
+from .settings import FHIR_BASE_URL, CLIENT_ID, CLIENT_SECRET, TENANT, AUTH_URL, SECURE_URL, FHIR_BASE_URI
 from .settings import FHIR_STORE_SENSITIVITY
 from .classes import OperationOutcomeException, DEFAULT_CODE,DEFAULT_STATUS_CODE, DEFAULT_SEVERITY, DEFAULT_DESCRIPTION
 from requests import request
@@ -69,7 +69,7 @@ def coverage_query(coverage={}, member={}):
                    "Content-Type": "application/json"}
 
     # build search query to FHIR Server
-    query = FHIR_BASE_URL + "/Coverage?identifier=" + coverage['identifier'][0]['value']
+    query = "Coverage?identifier=" + coverage['identifier'][0]['value']
     query = query + "&beneficiary.name=" + member['name'][0]['given'][0]
     query = query + "&beneficiary.birthdate=" + member['birthDate']
     # query = query + "&beneficiary.family=" + member['name']['family']
@@ -145,10 +145,13 @@ def evaluate_consent(consent={}, member=""):
         ic(FHIR_STORE_SENSITIVITY)
     else:
         # FHIR_STORE_SENSITIVITY =  "INCLUDED_NOLABEL"
+        '''
+        If the uri has a tag of #regular andthe FHIR_STORE_SENSITIVITY is INCLUDED_NOLABEL then that means we are unable to differentiate between the sensitive and not sensitive and so we should deny access
+        '''
         ic(FHIR_STORE_SENSITIVITY)
         accepted = False
-        if access_mode == REGULAR:
-            accepted = True
+        if access_mode == SENSITIVE:
+            accepted = False
     if accepted:
         # Write the Consent record for the member_id
         # it will be needed when an access token is requested
@@ -199,8 +202,9 @@ def call_fhir(calltype="GET", query="", id=""):
     else:
         headers = {"Accept": "application/json",
                    "Content-Type": "application/json"}
-
-    response = requests.get(query, headers=headers)
+    url = FHIR_BASE_URI + "/fhir/" + query
+    ic(url)
+    response = requests.get(url, headers=headers)
     try:
         resp = response.json()
     except ValueError:
@@ -220,6 +224,7 @@ def write_fhir(calltype="POST", data={}):
     :return status_code, resp:
     """
     ic("writing FHIR resource")
+    logging.info('writing to FHIR resource')
     if SECURE_URL:
         access_token = TOKEN.get_token()
         headers ={"Accept": "application/json",
@@ -228,25 +233,30 @@ def write_fhir(calltype="POST", data={}):
     else:
         headers = {"Accept": "application/json",
                    "Content-Type": "application/json"}
-    ic(data)
+    ic(data.keys())
+    ic("resourceType" in data.keys())
     if "resourceType" in data.keys():
         resource = data['resourceType']
-        url = FHIR_BASE_URL + "/" + resource
-        ic(url)
+        ic(resource)
+        url = FHIR_BASE_URL + "/fhir/" + resource
+        ic('line 237', url)
     else:
         ic("no resourceType")
         error = {'status_code': 406,
                  'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
                  'description': "resourceType not specified"}
 
-        raise OperationOutcomeException(status_code=error['status_code'],
-                                        description=error['description'])
+        raise OperationOutcomeException(status_code=error['status_code'], description=error['description'])
     ic(data)
     response = requests.post(url, json=data, headers=headers)
+    ic(response.status_code)
+    ic(response.text)
+    ic(response.json())
+
     try:
         resp = response.json()
-    except ValueError:
-        resp = {}
+    except ValueError as ve:
+        resp = { "error": ve }
     ic(resp)
     if response.status_code not in [200,201, 204]:
         logging.info(f"{response.status_code}:Problem with {calltype} call to FHIR Store")
@@ -283,12 +293,12 @@ def valid_period(start="", end=""):
     return valid
 
 
-def get_metadata():
+def get_metadata(calltype='GET'):
     '''
     Check the HAPI Server
     :return:
     '''
-
+    logging.info('get_metadata has been hit')
     if SECURE_URL:
         access_token = TOKEN.get_token()
         headers ={"Accept": "application/json",
@@ -297,13 +307,15 @@ def get_metadata():
     else:
         headers = {"Accept": "application/json",
                    "Content-Type": "application/json"}
-    url = FHIR_BASE_URL + "/metadata"
+    url = FHIR_BASE_URL + "/fhir/metadata"
     # url = "http://0.0.0.0:8080/fhir" + "/metadata"
     ic(url)
-
+    logging.info(f"{url=}")
+    print(f"{url=}")
     response = requests.get(url, headers=headers)
     try:
         resp = response.json()
+        logging.info(f"{resp=}")
     except ValueError:
         resp = {}
     ic(resp)
