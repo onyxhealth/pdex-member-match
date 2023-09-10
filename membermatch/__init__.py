@@ -145,7 +145,7 @@ def metadata():
     return jsonify(response)
 
 
-@app.route('/$member-match', methods=['POST'])
+@app.route('/Patient/$member-match', methods=['POST'])
 def member_match():
     '''
     process a member-match operation
@@ -177,7 +177,33 @@ def member_match():
             # We have a unique member. Now check Consent
             comply = evaluate_consent(consent, member_id)
             if comply:
-                return jsonify({'member_id': member_id})
+                return jsonify(
+                    {
+                        'resourceType': 'Parameters',
+                        #'id': member_id,
+                        "parameter" : [
+                            {
+                                "name" : "MemberIdentifier",
+                                "valueIdentifier" : {
+                                    "type" : {
+                                        "coding" : [
+                                            {
+                                                "system" : "http://terminology.hl7.org/CodeSystem/v2-0203",
+                                                "code" : "MB"
+                                            }
+                                        ]
+                                    },
+                                    "system" : "http://example.org/target-payer/identifiers/member",
+                                    "value" : "55678",
+                                    "assigner" : {
+                                    "display" : "Old Payer"
+                                    },
+                                    'id': member_id
+                                }
+                            }
+                    ],
+                    }
+                )
             else:
                 error = {'status_code': 422,
                      'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,

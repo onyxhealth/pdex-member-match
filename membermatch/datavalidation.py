@@ -373,9 +373,9 @@ def fhirstore_can_comply(access_modes=[]):
         # The fhir store has sensitive data but it can't be identified separately from regular data.
         # Therefore any request to return just regular data will have to be refused.
         ic(FHIR_STORE_SENSITIVITY)
-        if SENSITIVE in access_modes:
-            accepted = False
-        else:
+        if REGULAR in access_modes:
             accepted = True
+        else:
+            accepted = False
 
     return (accepted)
