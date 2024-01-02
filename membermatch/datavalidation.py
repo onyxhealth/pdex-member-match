@@ -30,7 +30,7 @@ def unique_match_on_coverage(coverage={}, member={}):
     return coverage_response
 
 
-def load_parameters(data={}):
+def load_parameters(data={}, bundle_type="single"):
     '''
     Load the parameters into dictionaries
     :param data:
@@ -40,8 +40,12 @@ def load_parameters(data={}):
     member = {}
     coverage = {}
     consent = {}
+    if bundle_type.lower() == "multi":
+        parm_type = "part"
+    else:
+        parm_type = "parameter"
 
-    for param in data['parameter']:
+    for param in data[parm_type]:
         if param['name'] == "MemberPatient":
             member = param['resource']
         elif param['name'] == "CoverageToMatch":
@@ -72,14 +76,14 @@ def coverage_query(coverage={}, member={}):
     query = FHIR_BASE_URL + "/Coverage?identifier=" + coverage['identifier'][0]['value']
     query = query + "&beneficiary.name=" + member['name'][0]['given'][0]
     query = query + "&beneficiary.birthdate=" + member['birthDate']
-    # query = query + "&beneficiary.family=" + member['name']['family']
+    query = query + "&beneficiary.family=" + member['name']['family']
     query = query + "&beneficiary.gender=" + member['gender']
 
     query_result = call_fhir(calltype="SEARCH", query=query)
     return query_result
 
 
-def evaluate_consent(consent={}, member=""):
+def evaluate_consent(consent={}, member="", bundle_type="single"):
     """
     Evaluate Consent request against FHIR Store capability
 
@@ -99,7 +103,7 @@ def evaluate_consent(consent={}, member=""):
     :param member:
     :return accepted = True | False:
     """
-    access_mode = ""
+    access_modes = []
     ic(member)
     access_period = {}
     today = date.today().isoformat()
@@ -108,12 +112,9 @@ def evaluate_consent(consent={}, member=""):
     ic(today)
     if "policy" in consent.keys():
         ic("checking consent policy")
-        for i in consent['policy']:
-            ic(consent['policy'])
-            if "uri" in i.keys():
-                ic(i['uri'])
-                if i['uri'] in [REGULAR, SENSITIVE]:
-                    access_mode = i["uri"]
+        # this should return a list
+        access_modes = evaluate_policy(consent['policy'])
+
     if "provision" in consent.keys():
         ic("checking provision")
         if "type" in consent['provision'].keys():
@@ -130,26 +131,36 @@ def evaluate_consent(consent={}, member=""):
     ic(access_period)
     ic(start)
     ic(end)
+    written = False
     if not valid_period(start, end):
-        # write an error
-        # operation outcome = 422
-        error = {'status_code': 422,
-                 'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
-                 'description': "Consent period is not valid"}
-
-        raise OperationOutcomeException(status_code=error['status_code'],
-                                        description=error['description'])
-
-    if FHIR_STORE_SENSITIVITY in ["EXCLUDED", "INCLUDED_LABELLED"]:
-        accepted = True
-        ic(FHIR_STORE_SENSITIVITY)
+        if bundle_type == "single":
+            written = False
+            # write an error
+            # operation outcome = 422
+            error = {'status_code': 422,
+                     'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
+                     'description': "Consent period is not valid"}
+            raise OperationOutcomeException(status_code=error['status_code'],
+                                            description=error['description'])
     else:
-        # FHIR_STORE_SENSITIVITY =  "INCLUDED_NOLABEL"
-        ic(FHIR_STORE_SENSITIVITY)
-        accepted = False
-        if access_mode == REGULAR:
-            accepted = True
-    if accepted:
+        written = True
+    accepted = fhirstore_can_comply(access_modes)
+    # accepted = False
+    # if FHIR_STORE_SENSITIVITY in ["EXCLUDED", "INCLUDED_LABELLED"]:
+    #     # We can deal with sensitive or regular requests
+    #     # EXCLUDED means the fhirstore has no sensitive data to return
+    #     accepted = True
+    #     ic(FHIR_STORE_SENSITIVITY)
+    # else:
+    #     # FHIR_STORE_SENSITIVITY =  "INCLUDED_NOLABEL"
+    #     # The fhir store has sensitive data but it can't be identified separately from regular data.
+    #     # Therefore any request to return just regular data will have to be refused.
+    #     ic(FHIR_STORE_SENSITIVITY)
+    #     if SENSITIVE in access_modes:
+    #         accepted = False
+    #     else:
+    #         accepted = True
+    if (written and accepted):
         # Write the Consent record for the member_id
         # it will be needed when an access token is requested
         ic("attempting to write consent")
@@ -168,7 +179,7 @@ def evaluate_consent(consent={}, member=""):
                 del consent['sourceReference']["reference"]
         ic("updated consent")
         ic(consent)
-        print(consent)
+        # print(consent)
         data = {}
         ic("calling write_fhir module")
         status_code, resp = write_fhir(calltype="POST", data=consent)
@@ -283,7 +294,7 @@ def valid_period(start="", end=""):
     return valid
 
 
-def get_metadata():
+def get_metadata(calltype='GET'):
     '''
     Check the HAPI Server
     :return:
@@ -313,3 +324,104 @@ def get_metadata():
     logging.debug(resp)
 
     return response.status_code, resp
+
+
+def evaluate_policy(policy=[]):
+    '''
+        "policy" : [
+          {
+            "uri" : "http://hl7.org/fhir/us/davinci-hrex/StructureDefinition-hrex-consent.html#regular"
+          }
+        ],
+
+    :param policy:
+    :return:
+    '''
+    ic(policy)
+    access_modes = []
+    for i in policy:
+        if "uri" in i.keys():
+            if i['uri'] not in access_modes:
+                access_modes.append(i["uri"])
+
+    return(access_modes)
+
+
+def fhirstore_can_comply(access_modes=[]):
+    '''
+    :param access_modes:
+    :return accepted:
+    '''
+    accepted = False
+    if FHIR_STORE_SENSITIVITY in ["EXCLUDED", "INCLUDED_LABELLED"]:
+        # We can deal with sensitive or regular requests
+        # EXCLUDED means the fhirstore has no sensitive data to return
+        accepted = True
+        ic(FHIR_STORE_SENSITIVITY)
+    else:
+        # FHIR_STORE_SENSITIVITY =  "INCLUDED_NOLABEL"
+        # The fhir store has sensitive data but it can't be identified separately from regular data.
+        # Therefore any request to return just regular data will have to be refused.
+        ic(FHIR_STORE_SENSITIVITY)
+        if SENSITIVE in access_modes:
+            accepted = False
+        else:
+            accepted = True
+
+    return(accepted)
+
+
+def create_member_match_response(matched_id=""):
+    '''
+
+    :param matched_id:
+    :return:
+    '''
+    parameter_out = """
+    {
+  "resourceType" : "Parameters",
+  "id" : "member-match-out",
+  "parameter" : [
+    {
+      "name" : "MemberIdentifier",
+      "valueReference" : {
+        "identifier" : "{0}",
+        }
+      }
+    }
+  ]
+}
+"""
+    return parameter_out.format(matched_id)
+
+
+def create_multi_member_match_response():
+    """
+    Create the default group resource
+    :return:
+    """
+    return
+
+
+def write_group(group_response):
+    """
+    Write Group Response to the FHIR Store
+    Get the written resource
+
+    :param group_response:
+    :return group_resource:
+    """
+
+    group_resource = group_response
+    return group_resource
+
+
+def populate_return_parameter(group_resource):
+    """
+    Add group_resource to Parameter Response and return
+    :param group_resource:
+    :return parameter_response:
+    """
+
+    parameter_response = {}
+    return parameter_response

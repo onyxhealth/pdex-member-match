@@ -1,0 +1,32 @@
+{
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MB"
+                }
+              ]
+            },
+            "system": "http://example.org/old-payer/identifiers/member",
+            "value": "55678",
+            "assigner": {
+              "display": "Old Payer"
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Person",
+            "given": [
+              "Patricia",
+              "Ann"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1974-12-25"
+      }

@@ -69,4 +69,22 @@ is returned with an operation outcome message.
 - load sample coverage and patient resources
 - create new parameter bundles that will enable matches to Patient and Coverage resources
 - create new parameter bundles and patient and coverage resources that will fail
+
+# PDex Multi-Member Match Operation
+
+The Parameter bundle received by the Multi-Member Match Operation has a series of member bundles to perform 
+a member match against. The same matching logic is applied as is used for a single member-match.
+
+The differences in processing a multi-member match is as follows:
+
+- Operation Outcomes should not halt processing.
+- The results of the member-match will be added to a group resource.
+- There are three possible member-match outcomes: Match, NoMatch and Match but Consent Constraint applies.
+- Members matches will be assigned to a group for the relevant outcome (Match, NoMatch, ConsentConstraint).
+- In the case of a match the Matched Patient.id is returned in group.member.entity.
+- The submitted patient record is added as a contained resource referenced from the extension in group.member.entity.
+- For NoMatch and ConsentConstraint the submitted patient record is added to group.member.extension
+- The submitted patient records are always added as a contained resource since they will not have been added to the FHIR Store.
+- Contained resources are added to group.contained.
 - 
+
