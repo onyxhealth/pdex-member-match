@@ -1,0 +1,127 @@
+{
+      "name": "ResourceIdentifier",
+      "resource": {
+        "resourceType": "Group",
+        "id": "07e72a15407547bf9d03f522aa536a72",
+        "contained": [
+          {
+            "resourceType": "Patient",
+            "id": "1",
+            "identifier": [
+              {
+                "type": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                      "code": "MB"
+                    }
+                  ]
+                },
+                "system": "http://example.org/old-payer/identifiers/member",
+                "value": "55678",
+                "assigner": {
+                  "display": "Old Payer"
+                }
+              }
+            ],
+            "name": [
+              {
+                "use": "official",
+                "family": "Person",
+                "given": [
+                  "Patricia",
+                  "Ann"
+                ]
+              }
+            ],
+            "gender": "female",
+            "birthDate": "1974-12-25"
+          },
+          {
+            "resourceType": "Patient",
+            "id": "2",
+            "identifier": [
+              {
+                "type": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                      "code": "MB"
+                    }
+                  ]
+                },
+                "system": "http://example.org/old-payer/identifiers/member",
+                "value": "45567",
+                "assigner": {
+                  "display": "Old Payer"
+                }
+              }
+            ],
+            "name": [
+              {
+                "use": "official",
+                "family": "Smith",
+                "given": [
+                  "William",
+                  "John"
+                ]
+              }
+            ],
+            "gender": "male",
+            "birthDate": "1958-12-25"
+          }
+        ],
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "{{ new_health_plan_id }}"
+          }
+        ],
+        "type": "person",
+        "actual": true,
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/us/davinci-pdex/CodeSystem/PdexMultiMemberMatchResultCS",
+              "code": "match",
+              "display": "Matched"
+            }
+          ]
+        },
+        "managingEntity": {
+          "identifier": {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "9876543210"
+          },
+          "display": "Old Health Plan"
+        },
+        "member": [
+          {
+            "entity": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-pdex/StructureDefinition/base-ext-match-parameters",
+                  "valueReference": {
+                    "reference": "#1"
+                  }
+                }
+              ],
+              "reference": "Patient/1001"
+            }
+          },
+          {
+            "entity": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/us/davinci-pdex/StructureDefinition/base-ext-match-parameters",
+                  "valueReference": {
+                    "reference": "#2"
+                  }
+                }
+              ],
+              "reference": "Patient/2002"
+            }
+          }
+        ]
+      }
+}

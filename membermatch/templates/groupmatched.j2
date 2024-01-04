@@ -1,0 +1,48 @@
+{
+  "name": "ResourceIdentifier",
+  "resource": {
+    "resourceType": "Group",
+    "contained": [{% for item in contained %}
+      {{ item|tojson }}{% if not loop.last %},{% endif %}{% endfor %}
+    ],
+    "identifier": [
+      {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "{{ new_health_plan_id }}"
+      }
+    ],
+    "type": "person",
+    "actual": true,
+    "code": {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex/CodeSystem/PdexMultiMemberMatchResultCS",
+          "code": "match",
+          "display": "Matched"
+        }
+      ]
+    },
+    "managingEntity": {
+      "identifier": {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "{{ old_health_plan_id }}"
+      },
+      "display": "{{ old_health_plan_name }}"
+    },
+    "member": [{%  for member in members %}
+      {
+        "entity": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/davinci-pdex/StructureDefinition/base-ext-match-parameters",
+              "valueReference": {
+                "reference": "#{{ member.inbound_id }}"
+              }
+            }
+          ],
+          "reference": "Patient/{{ member.patient_id }}"
+        }
+      }{% if not loop.last %},{% endif %}{% endfor %}
+    ]
+  }
+}

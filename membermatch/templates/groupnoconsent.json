@@ -1,0 +1,45 @@
+{
+    "name": "ConsentConstraint",
+    "resource": {
+      "resourceType": "Group",
+    "identifier": [
+      {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "{{ new_health_plan_id }}"
+      }
+    ],
+      "type": "person",
+      "actual": true,
+      "code": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/us/davinci-pdex/CodeSystem/PdexMultiMemberMatchResultCS",
+            "code": "consentconstraint",
+            "display": "Consent Constraint"
+          }
+        ]
+      },
+      "managingEntity": {
+        "identifier": {
+          "system": "http://hl7.org/fhir/sid/us-npi",
+          "value": "9876543210"
+        },
+        "display": "Old Health Plan"
+      },
+      "member": [
+        {
+          "entity": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/us/davinci-pdex/StructureDefinition/base-ext-match-parameters",
+                "valueReference": {
+                  "reference": "#4"
+                }
+              }
+            ],
+            "reference": "#4"
+          }
+        }
+      ]
+    }
+}

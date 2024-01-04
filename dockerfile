@@ -34,4 +34,4 @@ ARG FLASK_DEBUG=1
 # ENTRYPOINT ["gunicorn", "membermatch/__init__.py:app"]
 # ENTRYPOINT ["./entrypoint.sh"]
 # ENTRYPOINT ["gunicorn", "membermatch:"]
-CMD ["flask", "-A", "membermatch/__init__.py", "--debug", "run", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["flask", "-A", "membermatch/__init__.py", "--debug", "run", "--host", "127.0.0.1", "--port", "8000"]

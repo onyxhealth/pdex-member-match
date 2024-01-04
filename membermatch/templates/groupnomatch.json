@@ -1,0 +1,46 @@
+{
+  "name": "NoMatch",
+  "resource": {
+    "resourceType": "Group",
+    "contained": [],
+    "identifier": [
+      {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "0123456789"
+      }
+    ],
+    "type": "person",
+    "actual": true,
+    "code": {
+      "coding": [
+        {
+          "system": "http://hl7.org/fhir/us/davinci-pdex/CodeSystem/PdexMultiMemberMatchResultCS",
+          "code": "nomatch",
+          "display": "No Match"
+        }
+      ]
+    },
+    "managingEntity": {
+      "identifier": {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "9876543210"
+      },
+      "display": "Old Health Plan"
+    },
+    "member": [
+      {
+        "entity": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/davinci-pdex/StructureDefinition/base-ext-match-parameters",
+              "valueReference": {
+                "reference": "#3"
+              }
+            }
+          ],
+          "reference": "#3"
+        }
+      }
+    ]
+  }
+},

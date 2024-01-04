@@ -63,6 +63,7 @@ def coverage_query(coverage={}, member={}):
     :param coverage:
     :return:
     """
+    print(f"performing coverage query...")
     if SECURE_URL:
         access_token = TOKEN.get_token()
         headers = {"Accept": "application/json",
@@ -188,13 +189,13 @@ def evaluate_consent(consent={}, member="", bundle_type="single"):
             ic(status_code)
         else:
             ic("there was a problem")
-            error = {'status_code': 422,
-                     'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
-                     'description': "problem storing consent"}
+            if bundle_type == "single":
+                error = {'status_code': 422,
+                         'code': DEFAULT_CODE, 'severity': DEFAULT_SEVERITY,
+                         'description': "problem storing consent"}
 
-            raise OperationOutcomeException(status_code=error['status_code'],
-                                            description=error['description'])
-
+                raise OperationOutcomeException(status_code=error['status_code'],
+                                                description=error['description'])
     return accepted
 
 

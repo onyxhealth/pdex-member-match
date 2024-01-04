@@ -14,7 +14,7 @@ import uuid
 
 debug_mode = True
 app = Flask(__name__)
-
+ic(f"in __init__.py")
 
 def wrong_match(bundle_type="", operation_type=""):
     """
@@ -56,7 +56,13 @@ def validate_parameter_type(data={}):
     validated = True
     operation_type = "undefined"
     error = setup_error_dict()
-    if not (data.get('resourceType') and data.get('id')):
+    print(f"validating parameter type")
+    print(f"{type(data)}")
+    json_data = json.loads(data)
+    # print(f"data:[{data}]")
+    print(json_data['resourceType'])
+    if not (json_data['resourceType'] and json_data['id']):
+        print(f"problem with resourceType[{json_data['resourceType']}] and id[{json_data['id']}]")
         # Missing resourceType and id in data
         validated = False
         error['description'] = "badly formatted parameters in POST body"
@@ -64,8 +70,9 @@ def validate_parameter_type(data={}):
         raise OperationOutcomeException(status_code=error['status_code'],
                                         description=error['description'])
     else:
+        print(f"evaluating resourceType {json_data['resourceType']} ")
         # we have resourceType and id key values to assess
-        if not data['resourceType'] == "Parameters":
+        if not json_data['resourceType'] == "Parameters":
             validated = False
             error['description'] = "resourceType:Parameters not submitted in POST body"
             error['status_code'] = 422
@@ -74,10 +81,10 @@ def validate_parameter_type(data={}):
         else:
             # we have a Parameters resource
             # Lets see if it is a single member-match or a multi-member-match
-            if data['id'] == 'member-match-in':
+            if json_data['id'] == 'member-match-in':
                 validated = True
                 operation_type = "single"
-            elif data['id'] == 'payer-multi-member-match-in':
+            elif json_data['id'] == 'payer-multi-member-match-in':
                 validated = True
                 operation_type = "multi"
 
@@ -272,22 +279,33 @@ def multi_member_match():
     process a multi member-match operation
     :return:
     """
+    print("entering multi-member-match")
 
     data = request.get_json()
-
+    print(f"{type(data)}")
+    print(f"We have the data: {data[:40]}")
+    print(f"testing bundle_type")
     bundle_type = validate_parameter_type(data)
+    print(f"bundle_type:{bundle_type}")
     if not bundle_type.lower() == "multi":
         throw_error = wrong_match(bundle_type=bundle_type, operation_type="/$bulk-member-match")
         # We got an unexpected  bundle type
+
     # We should have a bundle_type of "multi"
-    group_response = {}
-    for part in data['parameter']:
+    json_data = json.loads(data)
+
+    print(json_data['parameter'])
+    print(f"processing each bundle. {len(json_data['parameter'])}")
+    # group_response = {}
+    for part in json_data['parameter']:
         # get each bundle of parameters
-
+        print(f"getting validated_data")
         v_data = validated_data(part, bundle_type=bundle_type)
-
-        member, coverage, consent = load_parameters(part)
+        print(f"loading up member,coverage and consent from parameters")
+        member, coverage, consent = load_parameters(part, bundle_type=bundle_type)
+        print(f"got member, coverage and consent- now try a match")
         m_data = unique_match_on_coverage(coverage, member)
+        print(f"back from a unique match")
         ic(m_data)
         ic(m_data[0])
         ic(m_data[1])
@@ -307,15 +325,19 @@ def multi_member_match():
                 else:
                     # add failed member info to group
                     pass
+
     # end for
     # now we write the Group resource to the FHIR Store
     # if written successfully we need to return the Group resource in the Parameter Response
-    group_resource = write_group(group_response)
-    parameter_response = populate_return_parameter(group_resource)
-    return jsonify(parameter_response)
+    #group_resource = write_group(group_response)
+    #parameter_response = populate_return_parameter(group_resource)
+    # return jsonify(parameter_response)
+    # print(f"Return a basic message")
+    return jsonify({"message": "you reached the $bulk-member-match-operation"})
 
 
 if __name__ == '__main__':
-
+    ic(f"Entering main __init__.py module")
+    ic(f"{DEFAULT_PORT}")
     app.run(port=DEFAULT_PORT, debug=debug_mode)
 

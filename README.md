@@ -1,8 +1,9 @@
-# Da Vinci Payer Data Exchange (PDex) Member-Match Operation
+# Da Vinci Payer Data Exchange (PDex) Single Member-Match Operation
 
-The purpose of this operation is to receive a parameter bundle, following the definition in the Da Vinci Health Record Exchange (HRex) IG.
+The purpose of this operation is to receive a parameter bundle, following the definition in the Da Vinci 
+Health Record Exchange (HRex) IG.
 
-The content of the bundle are used to perform a member-match. if a 
+The content of the bundle are used to perform a single member-match. if a 
 successful match is made the operation returns a FHIR Patient ID.
 
 The order of processing logic is as follows:
@@ -33,7 +34,7 @@ three scenarios:
 - Sensitive data is available in the FHIR API and is labelled as sensitive
 - Sensitive data is available in the FHIR API but is NOT labelled.
 
-The Member Match function will have a setting to identify which category the FHIR Store supports:
+The Single Member Match function will have a setting to identify which category the FHIR Store supports:
 # Values = "EXCLUDED" | "INCLUDED_LABELLED" | "INCLUDED_NOLABEL"
 FHIR_STORE_SENSITIVITY = "EXCLUDED"  
 
