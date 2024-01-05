@@ -19,9 +19,9 @@ def unique_match_on_coverage(coverage={}, member={}):
     match on coverage
     '''
     msg = "we are in the unique match on coverage function (datavalidation.py)"
-    ic(f"msg:{msg}")
-    ic(coverage)
-    ic(member)
+    # ic(f"msg:{msg}")
+    ic(coverage['beneficiary']['reference'])
+    ic(member['id'], member['name'][0])
 
     # build search query to FHIR Server
     coverage_response = coverage_query(coverage, member)
@@ -72,15 +72,25 @@ def coverage_query(coverage={}, member={}):
     else:
         headers = {"Accept": "application/json",
                    "Content-Type": "application/json"}
-
+    print(f"build query...for {coverage}")
     # build search query to FHIR Server
-    query = FHIR_BASE_URL + "/Coverage?identifier=" + coverage['identifier'][0]['value']
+    query = FHIR_BASE_URL + "/Coverage?identifier="
+    # print(f"{query}")
+    print(f"Coverage id: {coverage['identifier'][0]['value']} + {member['name'][0]}")
+    # print(f"{member}")
+    query = query + coverage['identifier'][0]['value']
+    # print(f"{query}")
     query = query + "&beneficiary.name=" + member['name'][0]['given'][0]
+    # print(f"query")
     query = query + "&beneficiary.birthdate=" + member['birthDate']
-    query = query + "&beneficiary.family=" + member['name']['family']
+    # print(f"{query}")
+    query = query + "&beneficiary.family=" + member['name'][0]['family']
+    # print(f"{query}")
     query = query + "&beneficiary.gender=" + member['gender']
 
+    print(f"Querying FHIR Store:{query}")
     query_result = call_fhir(calltype="SEARCH", query=query)
+    # print(f"Query Result:{query_result}")
     return query_result
 
 

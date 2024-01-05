@@ -297,19 +297,27 @@ def multi_member_match():
     print(json_data['parameter'])
     print(f"processing each bundle. {len(json_data['parameter'])}")
     # group_response = {}
+    matched = []
+    nomatch = []
+    noconsent = []
+    ic(len(json_data['parameter']))
     for part in json_data['parameter']:
         # get each bundle of parameters
         print(f"getting validated_data")
         v_data = validated_data(part, bundle_type=bundle_type)
-        print(f"loading up member,coverage and consent from parameters")
+        # print(f"loading up member,coverage and consent from parameters")
         member, coverage, consent = load_parameters(part, bundle_type=bundle_type)
         print(f"got member, coverage and consent- now try a match")
         m_data = unique_match_on_coverage(coverage, member)
         print(f"back from a unique match")
-        ic(m_data)
-        ic(m_data[0])
-        ic(m_data[1])
+        # ic(m_data)
+        # ic(m_data[0])
+        if 'total' in m_data[1]:
+            ic(m_data[1]['total'])
+        else:
+            ic(m_data[1])
         m_data1 = m_data[1]
+        ic(m_data1)
         member_id = ""
         if 'entry' in m_data1:
             if len(m_data1['entry']) == 1:
@@ -320,20 +328,31 @@ def multi_member_match():
                 if  (comply and len(member_id) > 0):
                     # we need to create Group
                     # add found member info to group
-                    pass
+                    print(f"Added {member_id} to Matched")
+                    matched.append({"member": member_id, "member_input": member})
                     # return jsonify({'member_id': member_id})
                 else:
                     # add failed member info to group
-                    pass
-
+                    print(f"Adding {member_id} to NoConsent")
+                    noconsent.append(member)
+            else:
+                # we didn't get a unique match.
+                print(f"Adding Member to NoMatch - not unique")
+                nomatch.append(member)
+        else:
+            # we got nothing back
+            print(f"no match for Member {member['name']}:[{member_id}]")
+            nomatch.append(member)
+    ic(len(matched), len(nomatch), len(noconsent))
     # end for
     # now we write the Group resource to the FHIR Store
     # if written successfully we need to return the Group resource in the Parameter Response
-    #group_resource = write_group(group_response)
-    #parameter_response = populate_return_parameter(group_resource)
+    # group_resource = write_group(group_response)
+    # parameter_response = populate_return_parameter(group_resource)
     # return jsonify(parameter_response)
     # print(f"Return a basic message")
-    return jsonify({"message": "you reached the $bulk-member-match-operation"})
+    parameter_response = {"data-matched": matched, "data-nomatch": nomatch, "data-noconsent": noconsent}
+    return jsonify({"message": "you reached the $bulk-member-match-operation", "data": parameter_response})
 
 
 if __name__ == '__main__':
